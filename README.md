@@ -1,57 +1,114 @@
-# Rapport d'Audit de Sécurité Statique APK
+# Rapport d'Analyse Statique APK
 
-Outils : Mobile Security Framework (MobSF)
+## 1\. Informations générales
 
-## 1\. Informations Générales
+* Date d’analyse : 26 avril 2026
+* Analyste : Mounir Merghich
+* APK analysé : app-debug.apk
+* Outils : MobSF + VM Mobexler
 
-| Date d'analyse       | 26 Avril 2026                       |
-| -------------------- | ----------------------------------- |
-| Analyste             | \[Votre Nom / Analyste Sécurité\]   |
-| Application Analysée | app-debug.apk                       |
-| Hash SHA-256         | Calculé via sha256sum app-debug.apk |
-| Environnement        | VM Mobexler - MobSF v3.x            |
+## 2\. Résumé exécutif
 
-## 2\. Résumé Exécutif
+L’analyse statique de l’application Android révèle un niveau de risque global **élevé**. Plusieurs vulnérabilités critiques ont été identifiées, notamment la présence de configurations de débogage, des composants exportés non sécurisés et des communications réseau potentiellement non chiffrées. L’application présente également des faiblesses liées au stockage d’informations sensibles.
 
-L'analyse statique de l'application révèle un niveau de risque **Élevé**. Bien que l'application soit fonctionnelle, plusieurs défauts de configuration (mode debug, composants exportés) et la présence de secrets en clair dans le code source présentent des risques de fuite de données et d'exploitation par des applications tierces malveillantes.
+## 3\. Préparation de l’environnement
 
-## 3\. Analyse du Manifeste et Configuration
+* Création d’un dossier d’analyse sécurisé
+* Copie de l’APK
+* Calcul du hash SHA-256
+* Documentation de la traçabilité
 
-* **Mode Debug :** Activé (android:debuggable="true"). Permet l'attachement d'un débogueur et l'extraction de données.
-* **Backup :** Autorisé (android:allowBackup="true"). Risque d'extraction des données via ADB.
-* **Sécurité Réseau :** Trafic en clair autorisé (usesCleartextTraffic="true"). Communication HTTP vulnérable aux interceptions MITM.
+## 4\. Lancement de MobSF
 
-## 4\. Top Vulnérabilités Identifiées (Corrélation MASVS)
+* Démarrage via : `./run.sh 127.0.0.1:8000`
+* Accès via navigateur : `http://127.0.0.1:8000`
+* Interface opérationnelle
 
-### V-01 : Stockage de secrets en clair
+## 5\. Analyse de l’APK
 
-| Sévérité        | CRITIQUE                                                                       |
-| --------------- | ------------------------------------------------------------------------------ |
-| Référence MASVS | MSTG-STORAGE-14 (Secrets hardcodés)                                            |
-| Preuve          | Fichier : res/values/strings.xml ou classe BuildConfig                         |
-| Description     | Détection de clés API et tokens d'authentification en dur dans les ressources. |
+* Import de l’APK dans MobSF
+* Analyse automatique réalisée
+* Score de sécurité : **\[SCORE\]**
 
-### V-02 : Composants Exportés sans Protection
+## 6\. Analyse du manifeste
 
-| Sévérité        | ÉLEVÉE                                                                                             |
-| --------------- | -------------------------------------------------------------------------------------------------- |
-| Référence MASVS | MSTG-PLATFORM-2 (Communication inter-app)                                                          |
-| Preuve          | android:exported="true" détecté dans le Manifeste pour certaines Activités.                        |
-| Description     | Des composants internes peuvent être lancés par n'importe quelle autre application sur l'appareil. |
+### Configurations sensibles
 
-## 5\. Analyse des Ressources & Endpoints
+* android:debuggable = true
+* android:allowBackup = true
+* usesCleartextTraffic = true
 
-Liste des domaines et serveurs identifiés lors de l'analyse :
+### Permissions dangereuses
 
- \- http://api.dev.example.com/v1/ (Trafic non chiffré !)  
- \- https://auth.example.com/oauth/token  
- \- https://logs-internal.test-env.net
+* ACCESS\_FINE\_LOCATION
+* READ\_CONTACTS
+* INTERNET
 
-## 6\. Recommandations Prioritaires
+### Composants exportés
 
-1. **Désactiver le débogage :** Passer `android:debuggable` à `false` dans le manifeste de production.
-2. **Sécuriser les communications :** Implémenter un fichier `network_security_config.xml` et forcer le HTTPS (HSTS).
-3. **Gestion des secrets :** Retirer les clés d'API du code source et utiliser le _Android Keystore System_.
-4. **Protection des composants :** Restreindre les accès aux composants exportés avec des permissions personnalisées ou passer `exported` à `false`.
+* MainActivity (exported=true)
+* Service exposé sans protection
 
-Ce rapport a été généré dans le cadre d'un exercice pédagogique. L'intégrité de l'analyse est garantie par le hash SHA-256 documenté en section 1.
+## 7\. Analyse réseau
+
+* Absence de configuration réseau sécurisée
+* Autorisation du trafic HTTP
+* Endpoints détectés :
+   * http://api.example.com
+   * https://test.example.com
+
+## 8\. Analyse du code et ressources
+
+### Vulnérabilités détectées
+
+* Clés API hardcodées
+* Logs sensibles exposés
+* Mauvaise gestion des erreurs
+
+### Secrets détectés
+
+* API\_KEY = "123456"
+
+## 9\. Corrélation OWASP MASVS
+
+* Vulnérabilité : Clé API hardcodée  
+ Référence : MSTG-STORAGE-14  
+ Impact : fuite de données sensibles
+  
+* Vulnérabilité : HTTP non sécurisé  
+ Référence : MSTG-NETWORK-1  
+ Impact : interception des communications
+
+## 10\. Top vulnérabilités
+
+* Clés API en clair dans le code
+* Traffic HTTP autorisé
+* Mode debug activé
+* Composants exportés non sécurisés
+
+## 11\. Recommandations
+
+* Supprimer les clés API du code source
+* Désactiver le mode debug en production
+* Forcer HTTPS uniquement
+* Limiter les composants exportés
+* Implémenter Network Security Config
+
+## 12\. Conclusion
+
+L’application présente plusieurs vulnérabilités critiques pouvant compromettre la sécurité des données. Une correction rapide est nécessaire avant toute mise en production.
+
+## 13\. Annexes
+
+### Permissions
+
+* ACCESS\_FINE\_LOCATION
+* READ\_CONTACTS
+
+### Endpoints
+
+* http://api.example.com
+
+### Composants exportés
+
+* MainActivity
